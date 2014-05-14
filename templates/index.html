@@ -1,0 +1,140 @@
+<!doctype html>
+
+<html>
+  
+  <head>
+    <title>Presensi Bluetooth</title>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
+    <style type="text/css">
+      /*       * Style tweaks       * --------------------------------------------------       */
+      body {
+        padding-top: 70px;
+      }
+      footer {
+        padding-left: 15px;
+        padding-right: 15px;
+      }
+      /*       * Off Canvas       * --------------------------------------------------       */
+      @media screen and(max-width: 768px) {
+        .row-offcanvas {
+          position: relative;
+          -webkit-transition: all 0.25s ease-out;
+          -moz-transition: all 0.25s ease-out;
+          transition: all 0.25s ease-out;
+        }
+        .row-offcanvas-right .sidebar-offcanvas {
+          right: -50%;
+          /* 6 columns */
+        }
+        .row-offcanvas-left .sidebar-offcanvas {
+          left: -50%;
+          /* 6 columns */
+        }
+        .row-offcanvas-right.active {
+          right: 50%;
+          /* 6 columns */
+        }
+        .row-offcanvas-left.active {
+          left: 50%;
+          /* 6 columns */
+        }
+        .sidebar-offcanvas {
+          position: absolute;
+          top: 0;
+          width: 50%;
+          /* 6 columns */
+        }
+      }
+    </style>
+  </head>
+
+<body>
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Presensi Bluetooth</a>
+        </div>
+      </div>
+      <!-- /.nav-collapse -->
+    </div>
+    <!-- /.container -->
+    <!-- /.navbar -->
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8">
+          <h2>Daftar Presensi</h2>
+          <strong>Kelas saat ini berlangsung: <span id="nama-kelas"></span></strong>
+          <table class="table table-hover table-striped">
+            <thead>
+              <tr>
+                <td><strong>#</strong></td>
+                <td><strong>Nama</strong></td>
+                <td><strong>Alamat bt</strong></td>
+                <td><strong>Kehadiran</strong></td>
+              </tr>
+            </thead>
+            <tbody id="data">
+              <!-- 
+              <tr id="00:00:00:00:00:00">
+                <td>5111100012</td>
+                <td>Putu Wiramaswara Widya</td>
+                <td>00:00:00:00:00:00</td>
+                <td class="status">HADIR</td>
+              </tr>
+              -->
+            </tbody>
+          </table>
+          <button class="btn" id="clearButton">Bersihkan Data</button>
+          <p id="refreshing">Refreshing...</p>
+        </div>
+        <div class="col-md-4">
+          <h4>Selamat Datang</h4>
+          <p>Laman ini memuat daftar presensi mahasiswa/siswa secara waktu nyata yang akan ditandai ketika perangkat server mendeteksi adanya perangkat bluetooth dari mahasiswa/siswa bersangkutan.</p>
+          <p>Agar presensi bisa dilakukan, pastikan setiap perangkat bluetooth sudah masuk ke dalam area jangkau server dan <strong>jangan lupa menghidupkan fitur <i>discovery</i></strong> agar perangkat bluetooth anda bisa dideteksi.</p>
+          <h4>Sistem dikerjakan oleh</h4>
+          <p></p>
+          <ul>
+            <li>Putu Wiramaswara Widya</li>
+            <li>Suliadi Marsetya</li>
+            <li>Guruh Adi Darma</li>
+            <li>Muhammad Redha</li>
+          </ul>
+          <p></p>
+        </div>
+      </div>
+    </div>
+    <!--/.container-->
+</body>
+<script>
+$(document).ready(function() {
+    var socket = io.connect('http://' + document.domain + ':' + location.port + '/sock');
+    socket.on('retrClassData', function(classs) {
+        $("#nama-kelas").html(classs[1]);
+    });
+    socket.on('retrData', function(attendee) {
+        $("#data").html("");
+        $.each(attendee, function(i, data) {
+            $("#data").append("<tr data-bt='" + data[2] + "'> <td>" + data[0]+ "</td> <td>" + data[1]+ "</td> <td>" + data[2]+ "</td> <td class='status'>"+ data[3] + "</td> </tr>");
+        });
+        $("#refreshing").fadeOut(500);
+    });
+    $("#clearButton").click(function() {
+        $("#refreshing").fadeIn(500);
+        $("#data").html("");
+        socket.emit("clearData");
+    });
+    setInterval(function() {
+        $("#refreshing").fadeIn(500);
+        socket.emit("check");
+        socket.emit("getClassData");
+    }, 5000);
+});
+</script>
+</html>
